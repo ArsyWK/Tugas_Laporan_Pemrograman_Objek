@@ -1,3 +1,5 @@
+![Lampiran](![Uploading image.png…]()
+)
 ## Deskripsi Aplikasi
 Ambatuwar merupakan game yang menggunakan konsep arkade, dengan permainan yang cepat dan simpel mudah untuk diminati para pemain veteran dan baru
 - **MouseControlOption** fitur ini terdapat pada laman setting yang akan menggerakan kapal yang menyamakan posisi kapal dengan posisi mouse
