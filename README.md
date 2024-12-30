@@ -1,4 +1,4 @@
-![Lampiran](![Uploading image.png…]()
+![Lampiran](![Uploading StartGameAmbatu.PNG…]()
 )
 ## Deskripsi Aplikasi
 Ambatuwar merupakan game yang menggunakan konsep arkade, dengan permainan yang cepat dan simpel mudah untuk diminati para pemain veteran dan baru
