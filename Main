@@ -1,0 +1,506 @@
+package application;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image; 
+import javafx.animation.AnimationTimer;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.MouseButton;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.stage.Stage;
+import javafx.scene.layout.Pane;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
+import javafx.scene.control.ToggleButton;
+
+
+
+
+
+public class Main extends Application {
+	;
+    Image spaceimgImage = new Image("file:///C:/Users/user/Documents/Game/Spaceship@4x.png");
+    Image asteimgImage = new Image("file:///C:/Users/user/Downloads/Asteroid.png");
+    Image powerUpImage = new Image("file:///C:/Users/user/Downloads/thunderbolt-icon-illustration/Artboard%201@4x.png");
+    private boolean useKeyboardControls = false;
+    private double spaceshipX, spaceshipY;
+    private int playerLife = 10;
+    private List<Projectile> projectiles = new ArrayList<>();
+    private List<Asteroid> asteroids = new ArrayList<>();
+    private List<PowerUp> powerUps = new ArrayList<>();
+    private Random random = new Random();
+    private Canvas canvas;
+    private Scene mainMenuScene, gameScene,settingsScene;
+    long spreadShotDuration = 3000;
+    long DoubleShotDuration = 3000;
+    private long spreadShotEndTime = 0;
+    private long doubleShotEndTime = 0;
+    private boolean isSpreadShot = false;
+    private boolean isDoubleShot = false;
+    private boolean moveLeft = false;
+    private boolean moveRight = false;
+    private boolean moveUp = false;
+    private boolean moveDown = false;
+    private double spaceshipSpeed = 5;
+    
+
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    public void start(Stage primaryStage) {
+       
+
+    
+        setupGameScene(primaryStage);
+        setupMainMenu(primaryStage);
+        setupSettingsMenu(primaryStage);  
+
+        primaryStage.setScene(mainMenuScene);
+        primaryStage.show();
+    }
+
+    private void setupMainMenu(Stage primaryStage) {
+        Button startButton = new Button("Start Game");
+        Button settingsButton = new Button("Settings");
+        Button exitButton = new Button("Exit");
+
+        startButton.setOnAction(e -> primaryStage.setScene(gameScene));
+        settingsButton.setOnAction(e -> primaryStage.setScene(settingsScene));
+        exitButton.setOnAction(e -> System.exit(0));
+
+        VBox menuLayout = new VBox(20, startButton, settingsButton, exitButton);
+        menuLayout.setStyle("-fx-alignment: center; -fx-padding: 50;");
+        mainMenuScene = new Scene(menuLayout, 800, 600);
+    }
+
+    private void setupSettingsMenu(Stage primaryStage) {
+    	ToggleButton keyboardToggle = new ToggleButton("Keyboard");
+        ToggleButton mouseToggle = new ToggleButton("Mouse");
+        ToggleGroup controlToggleGroup = new ToggleGroup();
+
+        RadioButton mouseControlOption = new RadioButton("Mouse Control");
+        RadioButton keyboardControlOption = new RadioButton("Keyboard Control (WASD)");
+
+        mouseControlOption.setToggleGroup(controlToggleGroup);
+        keyboardControlOption.setToggleGroup(controlToggleGroup);
+
+        if (useKeyboardControls) {
+            keyboardToggle.setSelected(true);
+        } else {
+            mouseToggle.setSelected(true);
+        }
+
+        keyboardToggle.setOnAction(e -> useKeyboardControls = true);
+        mouseToggle.setOnAction(e -> useKeyboardControls = false);
+        
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> primaryStage.setScene(mainMenuScene));
+
+        controlToggleGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            useKeyboardControls = newToggle == keyboardControlOption;
+        });
+
+        VBox settingsLayout = new VBox(20, mouseControlOption, keyboardControlOption, backButton);
+        settingsLayout.setStyle("-fx-alignment: center; -fx-padding: 50;");
+        settingsScene = new Scene(settingsLayout, 800, 600);  
+    }
+
+    private void setupGameScene(Stage primaryStage) {
+        canvas = new Canvas(800, 600);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        Pane root = new Pane();
+        root.getChildren().add(canvas);
+        
+        Button exitButton = new Button("Exit to Main Menu");
+        exitButton.setLayoutX(10);  
+        exitButton.setLayoutY(30);
+        exitButton.setOnAction(e -> {
+        resetGame();  
+         primaryStage.setScene(mainMenuScene);
+        });
+        
+        root.getChildren().add(exitButton);
+        
+        gameScene = new Scene(root);
+
+        gameScene.setOnKeyPressed(e -> {
+            if (useKeyboardControls) {
+                switch (e.getCode()) {
+                    case A -> moveLeft = true;
+                    case D -> moveRight = true;
+                    case W -> moveUp = true;
+                    case S -> moveDown = true;
+                }
+            }
+        });
+        
+        gameScene.setOnKeyReleased(e -> {
+            if (useKeyboardControls) {
+                switch (e.getCode()) {
+                    case A -> moveLeft = false;
+                    case D -> moveRight = false;
+                    case W -> moveUp = false;
+                    case S -> moveDown = false;
+                }
+            }
+        });
+        
+        
+        gameScene.setOnMouseMoved(e -> {
+            if (!useKeyboardControls) {
+                spaceshipX = e.getX();
+                spaceshipY = e.getY();
+            }
+        });
+ 
+    	
+       
+
+        
+        gameScene.setOnMousePressed(e -> {
+            if (e.getButton() == MouseButton.PRIMARY) {
+                if (isSpreadShot == true) {
+                    projectiles.add(new Projectile(spaceshipX , spaceshipY, 180));
+                    projectiles.add(new Projectile(spaceshipX, spaceshipY,90));
+                    projectiles.add(new Projectile(spaceshipX , spaceshipY,45));
+                } else if (isDoubleShot == true) {
+                    projectiles.add(new Projectile(spaceshipX+10, spaceshipY, 90));
+                    projectiles.add(new Projectile(spaceshipX-10, spaceshipY, 90));
+                } else {
+                		
+                    projectiles.add(new Projectile(spaceshipX, spaceshipY,90));
+                }
+            }
+        });
+        
+
+       
+        new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                try {
+					update();
+				} catch (Exception e) {
+				
+					e.printStackTrace();
+				}
+                render(gc);
+            }
+        }.start();
+
+        
+        spawnAsteroids();
+        spawnPowerUps();
+    };
+    
+    private void resetGame() {
+        playerLife = 10;
+        spaceshipX = canvas.getWidth() / 2;
+        spaceshipY = canvas.getHeight() - 50;
+        projectiles.clear();
+        asteroids.clear();
+        powerUps.clear();
+        isSpreadShot = false;
+        isDoubleShot = false;
+    }
+    
+    private void update()  {
+    	
+    	 if (useKeyboardControls) {
+             if (moveLeft) spaceshipX -= spaceshipSpeed;
+             if (moveRight) spaceshipX += spaceshipSpeed;
+             if (moveUp) spaceshipY -= spaceshipSpeed;
+             if (moveDown) spaceshipY += spaceshipSpeed;
+    	 }
+    	
+    	 projectiles.removeIf(Projectile::isOffScreen);
+    	 
+    	 
+    	 for (Iterator<PowerUp> it = powerUps.iterator(); it.hasNext();) {
+    		    PowerUp powerUp = it.next();
+    		    powerUp.move();
+
+    		    if (powerUp.collidesWith(spaceshipX, spaceshipY)) {
+    		        activatePowerUp(powerUp.type);
+    		        it.remove(); 
+    		    } else if (powerUp.isOffScreen(canvas.getHeight())) {
+    		        it.remove(); 
+    		    }
+    		}
+
+    		
+    		
+			if (isSpreadShot && System.currentTimeMillis() > spreadShotEndTime) {
+    		    isSpreadShot = false;
+    		}
+    		
+			if (isDoubleShot && System.currentTimeMillis() > doubleShotEndTime) {
+    		    isDoubleShot = false;
+    		}
+
+         
+    	
+    	
+        for (Iterator<Projectile> it = projectiles.iterator(); it.hasNext(); ) {
+            Projectile projectile = it.next();
+            projectile.move();
+            if(projectile.isOffScreen())
+            {
+            	it.remove();
+            }
+            
+            
+        }
+        
+        
+        
+        
+
+        
+        for (Iterator<Asteroid> it = asteroids.iterator(); it.hasNext(); ) {
+            Asteroid asteroid = it.next();
+            asteroid.move();
+            if (asteroid.isOffScreen(canvas.getHeight())) {
+                playerLife--; 
+                it.remove();
+                if (playerLife <= 0) {
+                    System.exit(0);
+                }
+                continue; 
+            }
+            
+
+           
+            if (asteroid.collidesWith(spaceshipX, spaceshipY)) {
+                playerLife--;
+                it.remove();
+                if (playerLife <= 0) {
+                    System.exit(0);; 
+                }
+            }
+
+        
+            
+            
+            for (Iterator<Projectile> pit = projectiles.iterator(); pit.hasNext(); ) {
+                Projectile projectile = pit.next();
+                if (asteroid.collidesWith(projectile.x, projectile.y)) {
+                    pit.remove();
+                    it.remove();
+                    break;
+                }
+            }
+        }
+    }
+
+    private void render(GraphicsContext gc) {
+        
+    	
+    	
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
+       
+        gc.setFill(Color.BLUE);
+        gc.fillOval(spaceshipX - 15, spaceshipY - 15, 30, 30);
+
+       
+        gc.setFill(Color.YELLOW);
+        for (Projectile projectile : projectiles) {
+            gc.fillOval(projectile.x - 5, projectile.y - 5, 10, 10);
+        }
+
+       
+        for (Asteroid asteroid : asteroids) {
+            gc.save();
+            gc.translate(asteroid.x, asteroid.y);
+            gc.rotate(asteroid.rotation);
+            gc.drawImage(asteimgImage, -asteroid.size / 2, -asteroid.size / 2, asteroid.size, asteroid.size);
+            gc.restore();
+        }
+        
+        
+        
+        for (PowerUp powerUp : powerUps) {
+            gc.drawImage(powerUpImage, powerUp.x - 15, powerUp.y - 15, 30, 30);
+        }
+        
+        gc.drawImage(spaceimgImage, spaceshipX - 25, spaceshipY - 25, 50, 50);
+        
+       
+        
+        gc.setFill(Color.RED);
+        gc.setFont(new Font(40));
+        gc.fillText("Life: " + playerLife, 10, 100);
+    }
+
+    private void spawnAsteroids() {
+        new AnimationTimer() {
+            private long lastSpawn = 0;
+
+            @Override
+            public void handle(long now) {
+                if (now - lastSpawn >= 1_000_000_000) { 
+                    asteroids.add(new Asteroid(random.nextDouble() * canvas.getWidth(), 0));
+                    lastSpawn = now;
+                }
+            }
+        }.start();
+    }
+
+    
+    
+     
+    
+    
+    private class Asteroid {
+        double x, y;
+        double speedX, speedY;
+        double rotation;
+        double rotationSpeed;
+        int size;
+
+        Asteroid(double x, double y) {
+            this.x = x;
+            this.y = y;
+            this.size = 40 + random.nextInt(30); 
+            this.speedX = (random.nextDouble() - 0.5) * 4; 
+            this.speedY = 2 + random.nextDouble() * 2; 
+            this.rotation = random.nextDouble() * 360;
+            this.rotationSpeed = (random.nextDouble() - 0.5) * 2; 
+        }
+
+        
+        void move() {
+            x += speedX;
+            y += speedY;
+            rotation += rotationSpeed;
+        }
+
+      
+        boolean isOffScreen(double canvasHeight) {
+            return y > canvasHeight;
+        }
+
+       
+        boolean collidesWith(double px, double py) {
+            return Math.hypot(px - x, py - y) < size / 2; 
+        }
+    }
+
+    private class Projectile {
+        double x, y;
+        double speedX = 0;
+        double speedY  = 0;
+        private static final double SPEED = 5;
+
+        Projectile(double x, double y, double rotation) {
+            this.x = x;
+            this.y = y;
+            this.speedX = SPEED * Math.cos(Math.toRadians(rotation)); 
+            this.speedY = SPEED * Math.sin(Math.toRadians(rotation)); 
+        }
+
+        void move() {
+            x += speedX;
+            y -= SPEED;
+        }
+
+        boolean isOffScreen() {
+            return y < 0;
+        }
+    }
+    
+  
+    
+    private void spawnPowerUps() {
+        new AnimationTimer() {
+            private long lastPowerUpSpawn = 0;
+
+            @Override
+            public void handle(long now) {
+                if (now - lastPowerUpSpawn >= 5_000_000_000L) { 
+                    double x = random.nextDouble() * canvas.getWidth();
+                    String type = random.nextBoolean() ? "Spread" : "Double";
+                    powerUps.add(new PowerUp(x, 0, type));
+                    lastPowerUpSpawn = now;
+                }
+            }
+        }.start();
+    }
+    
+    private void activatePowerUp(String type) {
+        if (type.equals("Spread")) {
+            isSpreadShot = true;
+            isDoubleShot = false;
+            spreadShotEndTime = System.currentTimeMillis() + spreadShotDuration;
+        } else if (type.equals("Double")) {
+            isDoubleShot = true;
+            isSpreadShot = false;
+            doubleShotEndTime = System.currentTimeMillis() + DoubleShotDuration;
+        }
+    }
+
+    
+    private class PowerUp {
+        double x, y;
+        double speedY;
+        String type; 
+
+        PowerUp(double x, double y, String type) {
+            this.x = x;
+            this.y = y;
+            this.speedY = 2 + random.nextDouble() * 2; 
+            this.type = type;
+        }
+
+        void move() {
+            y += speedY;
+        }
+
+        boolean isOffScreen(double screenHeight) {
+            return y > screenHeight; 
+        }
+
+        boolean collidesWith(double px, double py) {
+            return Math.hypot(px - x, py - y) < 15;
+        }
+    }
+
+    
+    private class AsteroidClass {
+        double x, y;
+        double speedX, speedY;
+        double rotation;
+        double rotationSpeed;
+        int size;
+
+        AsteroidClass(double x, double y) {
+            this.x = x;
+            this.y = y;
+            this.size = 40 + random.nextInt(30); 
+            this.speedX = (random.nextDouble() - 0.5) * 4; 
+            this.speedY = 2 + random.nextDouble() * 2;
+            this.rotation = random.nextDouble() * 360;
+            this.rotationSpeed = (random.nextDouble() - 0.5) * 2; 
+        }
+        void move() {
+            x += speedX;
+            y += speedY;
+            rotation += rotationSpeed;
+        }
+
+        boolean collidesWith(double px, double py) {
+            return Math.hypot(px - x, py - y) < size / 2;
+        }
+    }
+}
